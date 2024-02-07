@@ -90,6 +90,39 @@ def findNoResultEle(browser):
     except Exception as e:
         return None
 
+def formatWeiboPostTime(answerTime):
+    # 获取当前日期
+    current_time = time.localtime()
+    year = current_time.tm_year
+    month = current_time.tm_mon
+    day = current_time.tm_mday
+    hour = current_time.tm_hour
+    minute = current_time.tm_min
+    if ('秒前' in answerTime):
+        answerTime = str(year) + "年" + str(month) + "月" + str(
+            day) + "日 " + str(hour) + ":" + str(minute)
+    elif ('分钟前' in answerTime):
+        pattern1 = r'(\d+)分钟前'
+        minute_post = int(re.findall(pattern1, answerTime)[0])
+        minute -= minute_post
+        if (minute < 0):
+            minute = 60 + minute
+            hour -= 1
+        if (hour < 0):
+            hour = 24 + hour
+
+        answerTime = str(year) + "年" + str(month) + "月" + str(
+            day) + "日 " + str(hour) + ":" + str(minute)
+    elif ('今天' in answerTime):
+        pattern1 = r'今天(\d+:\d+)'
+        hour_min = re.findall(pattern1, answerTime)[0]
+        answerTime = str(year) + "年" + str(month) + "月" + str(
+            day) + "日 " + hour_min
+    elif ('年' not in answerTime):
+        answerTime = str(year) + "年" + answerTime
+
+    return answerTime
+
 # def insertData2Mysql(sql, param):
 #     # 存储到数据库
 #     # 连接数据库
@@ -196,38 +229,11 @@ def extractPageInfo(browser, keyword, func):
             fromAEles = cardContent.find_elements_by_css_selector('.from a')
             answerTime = fromAEles[0].text
 
-            # 获取当前日期
-            current_time = time.localtime()
-            year = current_time.tm_year
-            month = current_time.tm_mon
-            day = current_time.tm_mday
-            hour = current_time.tm_hour
-            minute = current_time.tm_min
-            if ('秒前' in answerTime):
-                answerTime = str(year) + "年" + str(month) + "月" + str(
-                    day) + "日 " + str(hour) + ":" + str(minute)
-            elif ('分钟前' in answerTime):
-                pattern1 = r'(\d+)分钟前'
-                minute_post = int(re.findall(pattern1, answerTime)[0])
-                minute -= minute_post
-                if (minute < 0):
-                    minute = 60 + minute
-                    hour -= 1
-                if (hour < 0):
-                    hour = 24 + hour
-
-                answerTime = str(year) + "年" + str(month) + "月" + str(
-                    day) + "日 " + str(hour) + ":" + str(minute)
-            elif ('今天' in answerTime):
-                pattern1 = r'今天(\d+:\d+)'
-                hour_min = re.findall(pattern1, answerTime)[0]
-                answerTime = str(year) + "年" + str(month) + "月" + str(
-                    day) + "日 " + hour_min
-            elif ('年' not in answerTime):
-                answerTime = str(year) + "年" + answerTime
+            # 对微博获取的日期进行格式化处理 YYYY年MM月DD日 HH:mm
+            answerTime = formatWeiboPostTime(answerTime)
 
             device = ''
-            if (len(fromAEles) == 2):
+            if (len(fromAEles) >= 2):
                 device = fromAEles[1].text
 
             # 获取card对应操作的元素
@@ -289,10 +295,14 @@ def extractPageInfo(browser, keyword, func):
             print("processing answer ", processCount, ' finished...')
             processCount += 1
 
+            # 每个回答收集休息5秒
+            time.sleep(5)
+
     # 清除一下浏览器缓存
     # browser.delete_all_cookies()
     print(approvalCounts)
     print(contents)
+    print(profiles)
     print("upvoteCounts length: ", len(approvalCounts), " contents length: ", len(contents))
 
 # 获取一个问题下的所有回答
@@ -356,6 +366,12 @@ def getNormalAnsweredInfo(browser, keyword, endTime):
             # 提取页面信息
             extractPageInfo(browser, keyword, getNormalAnsweredInfo)
 
+            # 每页数据收集休息10秒
+            time.sleep(10)
+
+        # 每个时间段数据收集休息20秒
+        time.sleep(20)
+
 def getAnsweredInfo(keyword, endTime):
     # chromedirver模拟操作浏览器
     chromedriver = "chromedriver"
@@ -375,9 +391,13 @@ def getAnsweredInfo(keyword, endTime):
 if __name__ == "__main__":
     keywordsList = ['小日本', '日本鬼子']
     # 年-月-日-时
-    endTime = '2018-01-01-00'
+    # endTime = '2018-01-01-00'
+    endTime = '2024-02-07-10'
     # 问题收集
     for keyword in keywordsList:
         # 创建数据库
         getAnsweredInfo(keyword, endTime)
+
+        # 每个关键词睡眠半分钟
+        time.sleep(30)
 
