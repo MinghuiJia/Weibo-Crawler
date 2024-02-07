@@ -2,6 +2,7 @@ import os
 import re
 import time
 import urllib.parse
+import datetime
 
 from selenium import webdriver
 from selenium.webdriver.chrome.options import Options
@@ -48,6 +49,47 @@ def getMoreButton(browser):
             if (style == ''):
                 return clickEle, answered
     return None, None
+
+def parseTimeStr(timeStr):
+    timeList = timeStr.split('-')
+    year = int(timeList[0])
+    month = int(timeList[1])
+    day = int(timeList[2])
+    hour = int(timeList[3])
+    return year, month, day, hour
+
+def getAllCustomTimes(currTime, endTime):
+    currYear, currMonth, currDay, currHour = parseTimeStr(currTime)
+    endYear, endMonth, endDay, endHour = parseTimeStr(endTime)
+
+    curr_dt = datetime.datetime(currYear, currMonth, currDay, currHour)
+    currTimeStr = curr_dt.strftime('%Y-%m-%d-%H')
+    end_dt = datetime.datetime(endYear, endMonth, endDay, endHour)
+
+    time_diff = curr_dt - end_dt
+    time_list = []
+    while True:
+        if (time_diff.days < 0):
+            print("end time incorrect...")
+            return []
+        strTime = end_dt.strftime('%Y-%m-%d-%H')
+
+        if (strTime == currTimeStr):
+            time_list.append(strTime)
+            break
+
+        time_list.append(strTime)
+        end_dt += datetime.timedelta(hours=1)
+
+    return time_list
+
+def findNoResultEle(browser):
+    try:
+        noResultEle = browser.find_element_by_css_selector('#pl_feed_main #pl_feedlist_index div[class*="card-no-result"]')
+        return noResultEle
+    except Exception as e:
+        return None
+
 # def insertData2Mysql(sql, param):
 #     # 存储到数据库
 #     # 连接数据库
@@ -210,8 +252,6 @@ def extractPageInfo(browser, keyword, func):
                 text = contentEles[1].text
             elif (len(contentEles) == 1):
                 text = contentEles[0].text
-            # else:
-            #     text = answered.find_element_by_css_selector('.card-feed>.content>p[node-type="feed_list_content"]').text
 
             # 所有信息解析完再对数据进行存储操作（防止某个解析崩掉信息不全，如果有信息没解析全，这条信息不会被记录）
             # 获取支持、评论数、作者基本信息
@@ -256,38 +296,67 @@ def extractPageInfo(browser, keyword, func):
     print("upvoteCounts length: ", len(approvalCounts), " contents length: ", len(contents))
 
 # 获取一个问题下的所有回答
-def getNormalAnsweredInfo(browser, keyword):
-    current_page = 1
+def getNormalAnsweredInfo(browser, keyword, endTime):
+    # 获取当前日期
+    currTime = time.localtime()
+    year = currTime.tm_year
+    month = currTime.tm_mon
+    day = currTime.tm_mday
+    hour = currTime.tm_hour
+    currTime = str(year) + '-' + str(month) + '-' + str(day) + '-' + str(hour)
+    times = getAllCustomTimes(currTime, endTime)
 
-    # 不停翻页，直至所有的回答都搜集到
-    src = ""
-    same_page_count = 0
-    # 每页内容不需要滚动动态加载，直接会显示全部的内容
-    while True:
-        print("start collecting the page ", current_page)
-        # 翻到当前页面
-        url = 'https://s.weibo.com/weibo?q=' + urllib.parse.quote(keyword) + '&nodup=1&page=' + str(current_page)
-        browser.get(url)
-        # 获取页面信息
-        src_updated = browser.page_source
+    for t in range(len(times)-1):
+        start_time = times[t]   # 这个日期小
+        end_time = times[t+1]   # 这个日期大
 
-        # 判断翻页后页面信息没更新,表示没有新的数据了,翻页继续查看是否有更新
-        if (src == src_updated):
-            same_page_count += 1
-            continue
-        # 由于可能存在页面更新的bug,所以设置了一个阈值,超过阈值次数后再结束当前关键词搜索
-        if (same_page_count > 10):
-            break
+        # 设置就是50页
+        current_page = 1
 
-        src = src_updated
-        current_page += 1
-        # 由于页面更新了,表明有新的数据,所有要重置统计相同页面信息的次数
+        # 不停翻页，直至所有的回答都搜集到
+        src = ""
         same_page_count = 0
+        # 每页内容不需要滚动动态加载，直接会显示全部的内容
+        print("start collecting the time ", start_time, " to ", end_time)
+        while True:
+            # 微博限制了一次最大请求的数量，最多翻页50页
+            if (current_page > 50):
+                break
 
-        # 提取页面信息
-        extractPageInfo(browser, keyword, getNormalAnsweredInfo)
+            print("start collecting the page ", current_page)
+            # 翻到当前页面
+            # &typeall=1&suball=1&timescope=custom:2023-12-01-0:2023-12-02-23&Refer=g&page=1
+            url = ('https://s.weibo.com/weibo?q=' + urllib.parse.quote(keyword) +
+                   '&typeall=1&suball=1&timescope=custom' + urllib.parse.quote(':') +
+                   start_time + urllib.parse.quote(':') + end_time + '&Refer=g&page=' + str(current_page))
+            browser.get(url)
 
-def getAnsweredInfo(keyword):
+            # 可能存在该时间段内查找不到内容，会弹出 抱歉，未找到相关结果 card-no-result，直接换一个日期
+            # 此时可能是时间段内没数据，或者翻页后没数据，都直接跳出循环，重新换新的时间段
+            noResultEle = findNoResultEle(browser)
+            if (noResultEle):
+                break
+
+            # 获取页面信息
+            src_updated = browser.page_source
+
+            # 判断翻页后页面信息没更新,表示没有新的数据了,翻页继续查看是否有更新
+            if (src == src_updated):
+                same_page_count += 1
+                continue
+            # 由于可能存在页面更新的bug,所以设置了一个阈值,超过阈值次数后再结束当前关键词搜索
+            if (same_page_count > 5):
+                break
+
+            src = src_updated
+            current_page += 1
+            # 由于页面更新了,表明有新的数据,所有要重置统计相同页面信息的次数
+            same_page_count = 0
+
+            # 提取页面信息
+            extractPageInfo(browser, keyword, getNormalAnsweredInfo)
+
+def getAnsweredInfo(keyword, endTime):
     # chromedirver模拟操作浏览器
     chromedriver = "chromedriver"
     os.environ["webdriver.chrome.driver"] = chromedriver
@@ -299,14 +368,16 @@ def getAnsweredInfo(keyword):
     browser = webdriver.Chrome(chrome_options=chrome_options)  # executable执行webdriver驱动的文件
 
 
-    getNormalAnsweredInfo(browser, keyword)
+    getNormalAnsweredInfo(browser, keyword, endTime)
 
     # browser.quit()
 
 if __name__ == "__main__":
     keywordsList = ['小日本', '日本鬼子']
+    # 年-月-日-时
+    endTime = '2018-01-01-00'
     # 问题收集
     for keyword in keywordsList:
         # 创建数据库
-        getAnsweredInfo(keyword)
+        getAnsweredInfo(keyword, endTime)
 
