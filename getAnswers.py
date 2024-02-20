@@ -194,7 +194,7 @@ def extractPageInfo(browser, keyword, func):
         answereds = browser.find_elements_by_css_selector('#pl_feed_main #pl_feedlist_index div[action-type="feed_list_item"]')
     except Exception as e:
         print(e)
-        time.sleep(300)
+        time.sleep(150)
 
         # 如果出现任何意外就重新开始解析这个问题的帖子
         func(browser, keyword)
@@ -284,8 +284,8 @@ def extractPageInfo(browser, keyword, func):
 
             # # 数据存储到数据库
             # sql = '''
-            #         INSERT INTO zhihu_answers(question_name,author_name,author_followers,author_describle,answer_upvotes,answer_create_time,answer_comment_count,answer_content,answer_post_time_ip,keyword) VALUES (%s,%s,%s,%s,%s,%s,%s,%s,%s,%s)
-            #           '''
+            #         INSERT INTO weibo_answers(author_name,answer_post_time,device,forward_count,comment_count,approval_count,post_content,keyword) VALUES (%s,%s,%s,%s,%s,%s,%s,%s)
+            #         '''
             # insertData2Mysql(sql, param)
 
         except (Exception, BaseException) as e:
@@ -295,8 +295,8 @@ def extractPageInfo(browser, keyword, func):
             print("processing answer ", processCount, ' finished...')
             processCount += 1
 
-            # 每个回答收集休息5秒
-            time.sleep(5)
+            # 每个回答收集休息2秒
+            time.sleep(2)
 
     # 清除一下浏览器缓存
     # browser.delete_all_cookies()
@@ -366,11 +366,11 @@ def getNormalAnsweredInfo(browser, keyword, endTime):
             # 提取页面信息
             extractPageInfo(browser, keyword, getNormalAnsweredInfo)
 
-            # 每页数据收集休息10秒
-            time.sleep(10)
+            # 每页数据收集休息5秒
+            time.sleep(5)
 
-        # 每个时间段数据收集休息20秒
-        time.sleep(20)
+        # 每个时间段数据收集休息10秒
+        time.sleep(10)
 
 def getAnsweredInfo(keyword, endTime):
     # chromedirver模拟操作浏览器
@@ -399,5 +399,5 @@ if __name__ == "__main__":
         getAnsweredInfo(keyword, endTime)
 
         # 每个关键词睡眠半分钟
-        time.sleep(30)
+        time.sleep(15)
 
