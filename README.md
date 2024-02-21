@@ -16,6 +16,7 @@
   - .\selenium_data文件夹是使用增加新的chrome映射的存放新环境
   - main.py - 主函数执行文件
   - getAnswers.py - 获取关键词对应的微博帖子
+  - generateNewSqlTable.py - 根据指定的联合主键生成新的表，保证联合主键没有重复的元素
 
 ## 待解决问题
   - 目前没有爬取微博下面的评论内容，后期进行完善
