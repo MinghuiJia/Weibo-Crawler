@@ -320,6 +320,10 @@ def getNormalAnsweredInfo(browser, keyword, endTime):
         start_time = times[t]   # 这个日期小
         end_time = times[t+1]   # 这个日期大
 
+        # 如果需要从当前时刻向前进行数据收集，就用这两个时刻
+        # end_time = times[len(times)-1-t]  # 这个日期大
+        # start_time = times[len(times)-2-t]  # 这个日期小
+
         # 设置就是50页
         current_page = 1
 
@@ -366,11 +370,11 @@ def getNormalAnsweredInfo(browser, keyword, endTime):
             # 提取页面信息
             extractPageInfo(browser, keyword, getNormalAnsweredInfo)
 
-            # 每页数据收集休息5秒
-            time.sleep(5)
+            # 每页数据收集休息40秒
+            time.sleep(40)
 
-        # 每个时间段数据收集休息10秒
-        time.sleep(10)
+        # 每个时间段数据收集休息40秒
+        time.sleep(40)
 
 def getAnsweredInfo(keyword, endTime):
     # chromedirver模拟操作浏览器
