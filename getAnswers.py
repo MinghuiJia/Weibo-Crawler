@@ -74,12 +74,12 @@ def getAllCustomTimes(currTime, endTime):
             return []
         strTime = end_dt.strftime('%Y-%m-%d-%H')
 
-        if (strTime == currTimeStr):
+        if (strTime >= currTimeStr):
             time_list.append(strTime)
             break
 
         time_list.append(strTime)
-        end_dt += datetime.timedelta(hours=1)
+        end_dt += datetime.timedelta(hours=12)
 
     return time_list
 
@@ -370,11 +370,11 @@ def getNormalAnsweredInfo(browser, keyword, endTime):
             # 提取页面信息
             extractPageInfo(browser, keyword, getNormalAnsweredInfo)
 
-            # 每页数据收集休息40秒
-            time.sleep(40)
+            # 每页数据收集休息20秒
+            time.sleep(20)
 
-        # 每个时间段数据收集休息40秒
-        time.sleep(40)
+        # 每个时间段数据收集休息20秒
+        time.sleep(20)
 
 def getAnsweredInfo(keyword, endTime):
     # chromedirver模拟操作浏览器
