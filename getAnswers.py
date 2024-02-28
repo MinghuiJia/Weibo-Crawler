@@ -79,7 +79,7 @@ def getAllCustomTimes(currTime, endTime):
             break
 
         time_list.append(strTime)
-        end_dt += datetime.timedelta(hours=12)
+        end_dt += datetime.timedelta(hours=24)
 
     return time_list
 
@@ -295,8 +295,8 @@ def extractPageInfo(browser, keyword, func):
             print("processing answer ", processCount, ' finished...')
             processCount += 1
 
-            # 每个回答收集休息2秒
-            time.sleep(2)
+            # # 每个回答收集休息2秒
+            # time.sleep(2)
 
     # 清除一下浏览器缓存
     # browser.delete_all_cookies()
@@ -334,7 +334,7 @@ def getNormalAnsweredInfo(browser, keyword, endTime):
         print("start collecting the time ", start_time, " to ", end_time)
         while True:
             # 微博限制了一次最大请求的数量，最多翻页50页
-            if (current_page > 50):
+            if (current_page > 10):
                 break
 
             print("start collecting the page ", current_page)
@@ -370,11 +370,11 @@ def getNormalAnsweredInfo(browser, keyword, endTime):
             # 提取页面信息
             extractPageInfo(browser, keyword, getNormalAnsweredInfo)
 
-            # 每页数据收集休息20秒
-            time.sleep(20)
+            # 每页数据收集休息5秒
+            time.sleep(5)
 
-        # 每个时间段数据收集休息20秒
-        time.sleep(20)
+        # 每个时间段数据收集休息5秒
+        time.sleep(5)
 
 def getAnsweredInfo(keyword, endTime):
     # chromedirver模拟操作浏览器
